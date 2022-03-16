@@ -27,6 +27,13 @@ const user1Data = {
     persons: [] as any,
 }
 
+const user2Data = {
+    first_name: 'Bong',
+    last_name: 'Bing',
+    encounters: [] as any,
+    persons: [] as any,
+}
+
 const person1Data: PersonModel = {
     first_name: 'Ping',
     last_name: 'Pong',
@@ -411,3 +418,153 @@ describe('encounter ', () => {
             .expect(httpStatus.NOT_FOUND)
     });
 });
+
+
+describe('DELETE /encounter', () => {
+
+    it('Successfully deleted ancounter with encounterid', async () => {
+        await supertest(app).post('/api/users')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(user1Data);
+
+        const { body: person } = await supertest(app).post('/api/persons')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person1Data)
+        
+        encounter1Data.persons.push(person._id);
+
+        const { body: encounter } = await supertest(app).post('/api/encounters')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(encounter1Data)
+            .expect(httpStatus.CREATED);
+
+        const encounterid = encounter._id
+        person2Data.encounters.push(encounterid);
+        user2Data.encounters.push(encounterid);
+
+        const { body: newUser } = await supertest(app).post('/api/users')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(user2Data);
+
+        const { body: newPerson } = await supertest(app).post('/api/persons')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person2Data)
+          
+        expect(newPerson.encounters).toContain(encounterid)
+
+        await supertest(app).delete('/api/encounters')
+        .set('Accept', 'application/json')
+        .set('Authorization', token)
+        .send(encounter._id)
+        .expect(httpStatus.OK);
+
+        expect(newPerson.encounters).not.toContain(encounterid)
+
+
+            //Re-initializes variables so that other tests are not affected
+        user2Data.encounters = [];
+        person2Data.encounters = [];
+        encounter1Data.persons = [];
+    })
+
+
+    
+
+    
+})
+
+describe('DELETE /encounter', () => {
+    
+
+    it('Successfully rejected delete with wrong nonexistant encoutnerid', async () => {
+        await supertest(app).post('/api/users')
+        .set('Accept', 'application/json')
+        .set('Authorization', token)
+        .send(user1Data);
+
+        const { body: person } = await supertest(app).post('/api/persons')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person1Data)
+
+        encounter4Data.persons.push(person._id);
+
+        const { body: encounter2 } = await supertest(app).post('/api/encounters')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(encounter4Data)
+            .expect(httpStatus.CREATED);
+        
+        
+        await supertest(app).delete('/api/encounters')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person._id)
+            .expect(httpStatus.NOT_FOUND);
+        //Re-initializes variables so that other tests are not affected
+        encounter4Data.persons = [];
+    })
+
+})
+
+describe('DELETE /encounter', () => {
+    
+
+    it('Successfully deleted encounter from multiple persons', async () => {
+        await supertest(app).post('/api/users')
+        .set('Accept', 'application/json')
+        .set('Authorization', token)
+        .send(user1Data);
+
+        const { body: person } = await supertest(app).post('/api/persons')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person1Data)
+
+        encounter5Data.persons.push(person._id);
+
+        const { body: encounter3 } = await supertest(app).post('/api/encounters')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(encounter5Data)
+            .expect(httpStatus.CREATED);
+
+        person1Data.encounters.push(encounter3._id);
+        
+        const { body: person2 } = await supertest(app).post('/api/persons')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person1Data)
+
+        const { body: person3 } = await supertest(app).post('/api/persons')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(person1Data)
+
+        const encounterid = encounter3._id
+        expect(person2.encounters).toContain(encounterid)
+        expect(person3.encounters).toContain(encounterid)
+        
+        await supertest(app).delete('/api/encounters')
+            .set('Accept', 'application/json')
+            .set('Authorization', token)
+            .send(encounter3._id)
+            .expect(httpStatus.OK);
+
+        expect(person2.encounters).not.toContain(encounterid)
+        expect(person3.encounters).not.toContain(encounterid)
+
+
+        //Re-initializes variables so that other tests are not affected
+        encounter5Data.persons = [];
+        person1Data.encounters = [];
+    })
+
+})
+
+    
